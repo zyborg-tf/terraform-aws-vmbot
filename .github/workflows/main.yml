@@ -42,7 +42,7 @@ jobs:
           'LICENSE'
         ) | Remove-Item -Recurse
         ## To avoid collisions 
-        Rename-Item ./that_repo/README.md -NewName README-orig.md
+        Rename-Item ./that_repo/deploy/tf/vmbot/README.md -NewName README-orig.md
 
     - name: Copy over the sample TF module
       shell: pwsh
