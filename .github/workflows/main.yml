@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  repository_dispatch:
+    #types: [opened,deleted]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+      name: Checkout this repo (the TF module)
+      with:
+        path: ./this_repo
+
+    - uses: actions/checkout@v2
+      name: Checkout that repo (the VMBot source and sample TF module)
+      with:
+        repository: zyborg/VMBot
+        path: ./that_repo
+
+    - name: Delete everthing except git meta
+      shell: pwsh
+      run: |
+        Get-Item ./this_repo/* -Exclude @(
+          '.git'
+          '.github'
+          '.gitignore'
+          'README.md'
+          'LICENSE'
+        ) | Remove-Item -Recurse
+
+    - name: Copy over the sample TF module
+      shell: pwsh
+      run: Copy-Item -Path ./that_repo/deploy/tf/vmbot/* -Recurse -Destination ./this_repo
+
+    - name: Git Commit and Push
+      shell: pwsh
+      run: |
+        $github_actor = ${env:GITHUB_ACTOR}
+        $github_token = ${env:INPUT_GITHUB-TOKEN}
+        $commit_message = 'auto-commit'
+        $force_add = $false
+        $branch = ($env:GITHUB_REF).Split('/')[2] ## 'master'
+        $email = "$($github_actor)@users.noreply.github.com"
+        $name = $github_actor
+        $netrc = "$($env:HOME)/.netrc"
+        Set-Content $netrc @"
+        machine github.com
+        login $github_actor
+        password $github_token
+
+        machine api.github.com
+        login $github_actor
+        password $github_token
+        "@
+        chmod 600 $netrc
+        git config --global user.email $email
+        git config --global user.name $name
+        cd ./this_repo
+        git add --all
+        git commit -m $commit_message
+        git push --follow-tags --set-upstream origin master
