@@ -9,3 +9,5 @@ to EC2 Lifecycle Events.
 
 For more details and documentation, go
 [here](https://github.com/zyborg/VMBot/blob/master/README.md).
+
+Last Build:  2020-06-02
